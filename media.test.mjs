@@ -65,6 +65,15 @@ test('configured media mount maps desktop or Android paths into the DSH host dir
  const media=new QqMedia({home:f.home,phone,nap,container:host,mediaPathPrefix:prefix});
  const result=await media.receive('987654321',m.attachments[0].ref);assert.equal(media.readText('987654321',result.fileId).text,'portable media');
 });
+test('configured media upload directory is used and remains inside the mapped prefix',async()=>{
+ const f=fixture(),style=process.platform==='win32'?win32:posix,prefix=process.platform==='win32'?f.container:'/napcat-share',uploadDir=style.join(prefix,'shared','outgoing');mkdirSync(join(f.container,'shared','outgoing'),{recursive:true});
+ const media=new QqMedia({home:f.home,phone:f.phone,nap:f.nap,container:f.container,mediaPathPrefix:prefix,mediaUploadDir:uploadDir});
+ const sent=await media.upload('987654321','session',{text:'custom directory',name:'message.txt',requestId:'custom-dir'});assert.equal(sent.sent,true);
+ const args=f.calls.at(-1).args;assert.equal(args.file.startsWith(style.join(uploadDir,'')),true);assert.equal(args.file.includes('dsh-chat-phone-transfer'),false);
+ const outside=style.join(style.dirname(prefix),'outside');
+ const unsafe=new QqMedia({home:f.home,phone:f.phone,nap:f.nap,container:f.container,mediaPathPrefix:prefix,mediaUploadDir:outside});
+ await assert.rejects(unsafe.upload('987654321','session',{text:'x',requestId:'outside-dir'}),/映射目录|超出/);
+});
 test('group upload notices create a normal isolated file inbox item',()=>{
  const f=fixture(),r=new QqRouting(f.phone);r.configure({ownerId:'7654321',accountId:'999999',rootSessionId:'session',allGroups:true,friendPrivate:true});r.directory([{group_id:'123456789'}],[]);
  assert.equal(r.event({post_type:'notice',notice_type:'group_upload',self_id:999999,group_id:123456789,user_id:222222,time:Date.now()/1000,file:{id:'notice-file',name:'notice.txt',size:10}},'999999'),true);

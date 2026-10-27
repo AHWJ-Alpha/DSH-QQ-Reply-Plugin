@@ -11,13 +11,20 @@ import {QqMedia,publicMessage} from './media.mjs';
 
 export const name='dsh-chat-phone';
 export const inject=['tools','connection','webServer','agents','sessionController','sessionProjections'];
-export const VERSION='0.4.0';
+export const VERSION='0.4.1';
 const root=dirname(fileURLToPath(import.meta.url));
 async function engineImport(pkg){return import(pkg).catch(e=>{if(e.code!=='ERR_MODULE_NOT_FOUND')throw e;return import(pathToFileURL(join(dirname(process.execPath),'../lib/node_modules',pkg,'lib/index.js')));});}
 export function isExternalTurn(agent){
   const events=agent?.session?.snapshotEvents?.()||[];
   for(let i=events.length-1;i>=0;i--)if(events[i].type==='user/message')return events[i].data?.source?.kind==='plugin:dsh-chat-phone';
   return false;
+}
+export function findOnebotConfig(directory,port){
+  if(!directory||!existsSync(directory))return null;
+  const candidates=readdirSync(directory).filter(n=>/^onebot11.*\.json$/.test(n)).sort();
+  return candidates.map(n=>join(directory,n)).find(p=>{
+    try {const c=JSON.parse(readFileSync(p,'utf8'));return (c.network?.httpServers||c.httpServers||[]).some(s=>s.enable&&Number(s.port)===Number(port));}catch{return false;}
+  })||null;
 }
 export async function apply(ctx,config={}){
   const {defineTool}=await engineImport('@deepseek-ai/dsh-tools');
@@ -26,22 +33,22 @@ export async function apply(ctx,config={}){
   const data=join(home,'chat-phone');mkdirSync(data,{recursive:true,mode:0o700});
   // Declared dependencies are essential: Cordis refuses undeclared service access.
   const controller=ctx.sessionController;
+  const onebotUrl=config.onebotUrl||'http://127.0.0.1:3000';
+  let onebotEndpoint;
+  try{onebotEndpoint=new URL(onebotUrl);}catch{throw Error('onebotUrl 必须是本机 HTTP 地址');}
+  if(onebotEndpoint.protocol!=='http:'||!['127.0.0.1','localhost','[::1]'].includes(onebotEndpoint.hostname)||onebotEndpoint.username||onebotEndpoint.password)throw Error('onebotUrl 仅允许本机 HTTP 地址');
+  const onebotPort=Number(onebotEndpoint.port||80);
   const napHome=config.napcatConfigDir||process.env.NAPCAT_CONFIG_DIR||'';
   let onebotConfig=config.onebotConfig;
-  if(!onebotConfig&&napHome&&existsSync(napHome)){
-    const candidates=readdirSync(napHome).filter(n=>/^onebot11.*\.json$/.test(n));
-    onebotConfig=candidates.map(n=>join(napHome,n)).find(p=>{
-      try {const c=JSON.parse(readFileSync(p,'utf8'));return (c.network?.httpServers||c.httpServers||[]).some(s=>s.enable&&Number(s.port)===3000);}catch{return false;}
-    });
-  }
+  if(!onebotConfig)onebotConfig=findOnebotConfig(napHome,onebotPort);
   if(!onebotConfig)throw Error('请在插件配置中设置 onebotConfig 或 napcatConfigDir');
   const configuredWebui=config.webuiConfig||(napHome?join(napHome,'webui.json'):null);
   const validGroups=Array.isArray(config.allowedGroups)&&config.allowedGroups.every(g=>/^\d{5,12}$/.test(String(g)));
   if(config.allowedGroups!==undefined&&!validGroups)throw Error('allowedGroups 必须是明确的 QQ 群号数组');
-  for(const [label,value,protocol] of [['onebotUrl',config.onebotUrl||'http://127.0.0.1:3000','http:'],['webuiUrl',config.webuiUrl||'http://127.0.0.1:6099','http:']]){
+  for(const [label,value,protocol] of [['onebotUrl',onebotUrl,'http:'],['webuiUrl',config.webuiUrl||'http://127.0.0.1:6099','http:']]){
     const u=new URL(value);if(u.protocol!==protocol||!['127.0.0.1','localhost','[::1]'].includes(u.hostname)||u.username||u.password)throw Error(`${label} 仅允许本机 HTTP 地址`);
   }
-  const nap=new NapCat({home:data,onebotConfig,webuiConfig:configuredWebui&&existsSync(configuredWebui)?configuredWebui:null,onebotUrl:config.onebotUrl||'http://127.0.0.1:3000',webuiUrl:config.webuiUrl||'http://127.0.0.1:6099',networkAvailable:()=>{
+  const nap=new NapCat({home:data,onebotConfig,webuiConfig:configuredWebui&&existsSync(configuredWebui)?configuredWebui:null,onebotUrl,webuiUrl:config.webuiUrl||'http://127.0.0.1:6099',networkAvailable:()=>{
     if(process.platform!=='android')return null;
     try{
       const info=execFileSync('/system/bin/dumpsys',['connectivity'],{encoding:'utf8',timeout:2500,maxBuffer:2*1024*1024});
@@ -114,7 +121,7 @@ export async function apply(ctx,config={}){
       if(r?.message_id===undefined)throw Error('缺少发送回执');return r;
     }});
   routing=new QqRouting(phone);
-  media=new QqMedia({home:data,phone,nap,...config.mediaContainer?{container:config.mediaContainer}:{},mediaPathPrefix:config.mediaPathPrefix||(process.platform==='win32'?null:'/')});
+  media=new QqMedia({home:data,phone,nap,...config.mediaContainer?{container:config.mediaContainer}:{},mediaPathPrefix:config.mediaPathPrefix||(process.platform==='win32'?null:'/'),mediaUploadDir:config.mediaUploadDir||null});
   const externalAllowed=new Set(['chat_phone_status','chat_phone_read','chat_phone_reply','chat_phone_complete','chat_phone_media','chat_phone_receive_file','chat_phone_read_file','chat_phone_upload_file']);
   ctx.tools.guard(exec=>isExternalTurn(exec.agent)&&!activeOwnerBatch(phone,exec.agent)&&!externalAllowed.has(exec.name)?'此消息来自其他QQ联系人或群聊，无权操作本机或修改绑定。':undefined);
   const output={schema:{type:'object',additionalProperties:false,properties:{ok:{type:'boolean',required:true},summary:{type:'string',required:true},data:{type:'json'},image:{type:'object',additionalProperties:false,properties:{attachmentId:{type:'string',required:true},mediaType:{type:'string',required:true},bytes:{type:'integer',required:true},width:{type:'integer',required:true},height:{type:'integer',required:true},name:{type:'string'}}}}},render:(_args,v)=>[{type:'text',text:v.summary+(v.data?'\n'+JSON.stringify(v.data):'')},...v.image?[{type:'image',attachment:v.image}]:[]]};

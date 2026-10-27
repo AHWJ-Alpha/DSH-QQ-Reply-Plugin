@@ -8,7 +8,8 @@ export class QqEvents {
     const c=JSON.parse(readFileSync(this.onebotConfig,'utf8'));
     const s=(c.network?.websocketServers||c.websocketServers||[]).find(s=>s.enable&&s.name===this.eventServerName);
     if(!s||!['127.0.0.1','localhost','::1','[::1]'].includes(s.host)||!s.token)throw Error('实时消息接口未配置');
-    const u=new URL(this.eventUrl||`ws://127.0.0.1:${Number(s.port)}/`);
+    const host=String(s.host).includes(':')&&!String(s.host).startsWith('[')?`[${s.host}]`:String(s.host);
+    const u=new URL(this.eventUrl||`ws://${host}:${Number(s.port)}/`);
     if(!['ws:','wss:'].includes(u.protocol)||!['127.0.0.1','localhost','::1','[::1]'].includes(u.hostname)||Number(u.port)!==Number(s.port))throw Error('实时消息仅允许本机已认证接口');
     u.searchParams.set('access_token',s.token);
     return u.toString();

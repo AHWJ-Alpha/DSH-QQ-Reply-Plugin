@@ -18,7 +18,7 @@
 
 ### ZIP 安装
 
-下载 GitHub Releases 中的 `dsh-qq-reply-plugin-0.4.0.zip`，在 DSH 的插件管理器导入 ZIP。若当前 DSH 版本不支持 ZIP 导入，可按下方源码安装。
+下载 GitHub Releases 中的 `dsh-qq-reply-plugin-0.4.1-import.zip`，在 DSH 的插件管理器导入 ZIP。若当前 DSH 版本不支持 ZIP 导入，可按下方源码安装。
 
 ### 源码安装
 
@@ -65,7 +65,7 @@ Android 示例应使用设备上实际路径，例如可访问的 DSH 私有目�
 | `loginLogPath` | 否 | 可选 NapCat 登录日志路径，仅用于显示登录服务故障提示。 |
 | `restartCommand`, `restartArgs` | 否 | 可选人工触发的重启命令和参数。不配置时插件不会尝试重启 NapCat。 |
 | `mediaPathPrefix` | 有媒体目录时建议设置 | NapCat 可见的绝对路径前缀，对应 `mediaContainer` 镜像目录。Android PRoot 常用 `/`；桌面端填写 NapCat 文件目录，例如 `C:/NapCat`。Windows 使用本机共享路径前必须设置。 |
-| `mediaUploadDir` | 否 | NapCat 可见的绝对文件发送目录，默认是 `mediaPathPrefix/root/dsh-chat-phone-transfer`；它必须位于前缀映射目录下，并能被 NapCat 读取。 |
+| `mediaUploadDir` | 否 | NapCat 可见的绝对文件发送目录，默认是 `mediaPathPrefix/root/dsh-chat-phone-transfer`；自定义目录必须位于 `mediaPathPrefix` 映射范围内，并能被 NapCat 读取。 |
 
 `mediaContainer` 是主机上的本地镜像根目录；该目录内相对路径需与 `mediaPathPrefix` 下 NapCat 可见路径一致。比如桌面端可令 `mediaContainer` 和 `mediaPathPrefix` 都指向 NapCat 数据目录；Android PRoot 可把容器根目录映射到 `/`。发送文件时使用 `mediaUploadDir` 指定 NapCat 可读取的路径。
 

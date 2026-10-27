@@ -1,5 +1,5 @@
 {
-  "name": "dsh-chat-phone", "version": "0.4.0", "type": "module", "main": "index.js",
+  "name": "dsh-chat-phone", "version": "0.4.1", "type": "module", "main": "index.js",
   "license": "MIT", "engines": { "node": ">=22" },
   "exports": { ".": "./index.js", "./client": "./client.js", "./package.json": "./package.json" },
   "scripts": { "test": "node --test phone.test.mjs media.test.mjs group-replies.test.mjs platform.test.mjs" },

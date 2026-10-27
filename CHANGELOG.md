@@ -1,3 +1,10 @@
+## 0.4.1
+
+- 修正 `mediaUploadDir` 配置未传入附件上传模块的问题，并验证上传目录限制在媒体映射范围内。
+- 从 NapCat 配置目录自动选择与 `onebotUrl` 端口相符的 HTTP 配置。
+- 默认实时事件连接采用 NapCat 配置中的本机主机名，覆盖 localhost 与 IPv6 loopback。
+- 本地回归测试 42 项通过。
+
 ## 0.4.0
 
 - 配置化 DSH/NapCat 路径与 loopback OneBot 端点，整理为可用于桌面和 Android DSH 的插件包。

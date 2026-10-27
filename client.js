@@ -55,7 +55,7 @@ window.__ModuleLoader__.load({id:'dsh-chat-phone',factory(require){
         channel&&button(channel.enabled?'暂停此聊天':'恢复此聊天',()=>run('pause',{...args(channel),paused:channel.enabled})),
         h('div',{className:'dcp-messages'},messages.length?messages.map(m=>h('article',{key:m.id,className:'dcp-message'},h('small',null,`${m.self?'我':m.sender} · ${new Date(m.at).toLocaleTimeString()}`),h('div',null,m.text),...(m.attachments||[]).map(a=>h('small',{key:a.ref,style:{display:'block'}},`${{image:'图片',forward:'合并转发',file:'文件'}[a.type]||a.type} · ${a.name} · ref ${a.ref}`)))):h('div',{className:'dcp-empty'},'等待新消息；首次只建立历史基线')),
         h('textarea',{'aria-label':'发送到当前QQ聊天',placeholder:'发送到当前选中的聊天',value:text,maxLength:3000,disabled:!!sending.current,onChange:e=>setText(e.target.value)}),button(sending.current?'检查 / 重试同一条':'发送',send,!channel?.enabled||!!scope?.paused||!text.trim()),h('small',null,'群消息停顿6秒后合并；普通回复间隔15秒。无关聊天可不回，@优先合并后回应。')),
-      h('small',null,'持续在线需要 DSH、NapCat、网络和模型 API 可用。图片支持视觉模型读取；合并转发可展开；文件支持接收、文本预览与上传（文件20MB、图片8MB）。语音与视频暂未解析。版本 0.4.0'));
+      h('small',null,'持续在线需要 DSH、NapCat、网络和模型 API 可用。图片支持视觉模型读取；合并转发可展开；文件支持接收、文本预览与上传（文件20MB、图片8MB）。语音与视频暂未解析。版本 0.4.1'));
   }
   function apply(ctx){
     ctx.effect(()=>{const s=document.createElement('style');s.dataset.plugin=ID;s.textContent=css;document.head.appendChild(s);return()=>s.remove();},'chat-phone.style');

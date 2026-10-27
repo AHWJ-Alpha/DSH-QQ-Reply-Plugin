@@ -61,8 +61,8 @@ export function readBounded(path,max,root){
   try{const s=fstatSync(fd);if(!s.isFile()||s.size>max)throw Error('仅支持大小限制内的普通文件');const b=Buffer.alloc(s.size);let n=0;while(n<b.length){const k=readSync(fd,b,n,b.length-n,null);if(!k)throw Error('读取附件时文件发生变化');n+=k;}return b;}finally{closeSync(fd);}
 }
 export class QqMedia{
-  constructor({home,phone,nap,container=null,mediaPathPrefix='/',download=downloadQq}){
-    Object.assign(this,{home,phone,nap,container,mediaPathPrefix,download});this.cache=join(home,'media');mkdirSync(this.cache,{recursive:true,mode:0o700});this.file=join(home,'media.json');
+  constructor({home,phone,nap,container=null,mediaPathPrefix='/',mediaUploadDir=null,download=downloadQq}){
+    Object.assign(this,{home,phone,nap,container,mediaPathPrefix,mediaUploadDir,download});this.cache=join(home,'media');mkdirSync(this.cache,{recursive:true,mode:0o700});this.file=join(home,'media.json');
     try{this.state=JSON.parse(readFileSync(this.file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;this.state={version:1,forwards:{},files:{},uploads:{}};}
     if(this.state.version!==1||!this.state.files||!this.state.forwards||!this.state.uploads)throw Error('媒体索引异常，保留数据并停止');
     for(const s of Object.values(this.state.uploads))if(s.phase==='sending')s.phase='uncertain';this.pending=new Map();this.save();
@@ -173,7 +173,7 @@ export class QqMedia{
     const old=this.state.uploads[request];if(old){if(old.fingerprint!==fingerprint)throw Error('requestId已用于不同文件');if(old.phase==='done')return {sent:true,duplicatePrevented:true,fileId:old.fileId};throw Error('该文件发送结果未知或仍在发送，不会重复上传；请机主核对QQ');}
     if(Object.keys(this.state.uploads).length>=5000)throw Error('上传回执已满，请机主整理');
     const pathStyle=process.platform==='win32'?win32:posix;
-    const remoteDir=pathStyle.join(this.mediaPathPrefix||'/', 'root','dsh-chat-phone-transfer',hash(this.home).slice(0,16));
+    const remoteDir=this.mediaUploadDir||pathStyle.join(this.mediaPathPrefix||'/', 'root','dsh-chat-phone-transfer',hash(this.home).slice(0,16));
     const dir=this.mapRemotePath(remoteDir,'媒体上传目录必须位于 NapCat 映射目录内',true);
     // The container path is fixed; no user-supplied file names become paths.
     const leaf=randomUUID(),staged=join(dir,leaf);writeFileSync(staged,bytes,{mode:0o600,flag:'wx'});
