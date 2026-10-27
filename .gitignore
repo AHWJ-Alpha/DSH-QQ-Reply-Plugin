@@ -1,0 +1,14 @@
+node_modules/
+*.log
+.env
+.env.*
+!.env.example
+onebot*.json
+webui.json
+inbox.json
+media.json
+media/
+_health.json
+*.zip
+*.tgz
+dist/
